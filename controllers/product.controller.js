@@ -42,9 +42,7 @@ const uploadToCloudinary = async (file) => {
       resource_type: 'image',
       fetch_format: 'auto',
       quality: 'auto',
-      transformation: [
-        { width: 1000, crop: 'limit' }
-      ]
+      
     });
 
     // Delete the temporary file
