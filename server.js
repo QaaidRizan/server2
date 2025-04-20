@@ -27,14 +27,10 @@ connectDB();
 app.use("/api/products", productRoutes);
 app.use("/api/users", userRoutes);
 
-// Serve static files from the "uploads" folder
-//app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-app.use('/uploads', express.static('uploads'));
-
-
+// No need for uploads directory middleware
+// app.use('/uploads', express.static('uploads'));
 
 // CORS for your frontend
-
 app.use(cors({ origin: "http://localhost:5173" })); // Allow only your frontend to upload files
 
 // Start the server
