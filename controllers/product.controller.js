@@ -14,7 +14,7 @@ if (!fs.existsSync(uploadsDir)) {
 // Configure Multer for disk storage
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, 'uploads/'); // Save files to the uploads directory
+    cb(null, './uploads/'); // Save files to the uploads directory
   },
   filename: function (req, file, cb) {
     cb(null, Date.now() + '-' + file.originalname); // Unique filename
