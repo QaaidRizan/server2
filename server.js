@@ -7,7 +7,7 @@ import { fileURLToPath } from "url";
 import productRoutes from "./routers/product.routes.js";
 import userRoutes from "./routers/user.routes.js";
 
-
+app.use(cors()); 
 dotenv.config();
 const app = express();
 
