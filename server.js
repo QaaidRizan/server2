@@ -7,7 +7,6 @@ import { fileURLToPath } from "url";
 import productRoutes from "./routers/product.routes.js";
 import userRoutes from "./routers/user.routes.js";
 
-app.use(cors()); 
 dotenv.config();
 const app = express();
 
@@ -18,7 +17,6 @@ const __dirname = path.dirname(__filename);
 
 // Middleware to parse JSON
 app.use(express.json());
-app.use(cors()); // Enable CORS for all routes
 
 // Connect to the database
 connectDB();
@@ -34,7 +32,7 @@ app.use('/uploads', express.static('uploads'));
 
 
 // CORS for your frontend
-
+app.use(cors()); // Enable CORS for all routes
 app.use(cors({ origin: "http://localhost:5173" })); // Allow only your frontend to upload files
 
 // Start the server
