@@ -8,17 +8,16 @@ const uploadToCloudinary = async (file) => {
     const result = await cloudinary.uploader.upload(file.path, {
       folder: 'products',
       resource_type: 'image',
-      // Add optimizations and transformations
       fetch_format: 'auto',
       quality: 'auto',
       transformation: [
-        { width: 1000, crop: 'limit' }  // Limit maximum width while maintaining aspect ratio
+        { width: 1000, crop: 'limit' }
       ]
     });
     return result.secure_url;
   } catch (err) {
-    console.error("Cloudinary upload failed:", err);
-    throw new Error("Image upload failed: " + err.message);
+    console.error("Cloudinary upload failed:", err); // Log the full error object
+    throw new Error("Image upload failed: " + (err.message || "Unknown error"));
   }
 };
 
