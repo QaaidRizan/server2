@@ -1,6 +1,39 @@
 import mongoose from "mongoose";
 import Product from "../models/product.model.js";
 import cloudinary from "./cloudinary.js";
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
+
+// Ensure the uploads directory exists
+const uploadsDir = path.join(process.cwd(), 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+// Configure Multer for disk storage
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/'); // Save files to the uploads directory
+  },
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + '-' + file.originalname); // Unique filename
+  }
+});
+
+const upload = multer({
+  storage: storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'), false);
+    }
+  }
+});
+
+export default upload;
 
 // Helper function to upload image to Cloudinary
 const uploadToCloudinary = async (file) => {
@@ -14,6 +47,10 @@ const uploadToCloudinary = async (file) => {
         { width: 1000, crop: 'limit' }
       ]
     });
+
+    // Delete the temporary file
+    fs.unlinkSync(file.path);
+
     return result.secure_url;
   } catch (err) {
     console.error("Cloudinary upload failed:", err); // Log the full error object
@@ -74,6 +111,12 @@ export const createProduct = async (req, res) => {
     }
 
     try {
+        if (!req.file) {
+            console.error("No file uploaded");
+            return res.status(400).json({ success: false, message: "Image file is required" });
+        }
+        console.log("Uploaded file path:", req.file.path);
+
         // Upload image to Cloudinary if file exists
         let imageUrl = "";
         if (req.file) {
