@@ -31,7 +31,6 @@ app.use("/api/users", userRoutes);
 // app.use('/uploads', express.static('uploads'));
 
 // CORS for your frontend
-app.use(cors({ origin: "http://localhost:5173" })); // Allow only your frontend to upload files
 
 // Start the server
 const PORT = process.env.PORT || 3000;
