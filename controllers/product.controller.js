@@ -44,9 +44,9 @@ const uploadToCloudinary = async (file) => {
 const formatProduct = (product) => ({
     id: product._id.toString(), // Convert MongoDB ObjectId to string
     name: product.name,
-    price: product.price,
-    description: product.description, // Include description
+    description: product.description,
     category: product.category,
+    price: product.price,
     image: product.image, // This is now a Cloudinary URL
 });
 
@@ -104,10 +104,11 @@ export const createProduct = async (req, res) => {
 
         const newProduct = new Product({
             name,
-            price,
-            image: imageUrl, // Store the Cloudinary URL instead of filename
             description,
             category,
+            price,
+            image: imageUrl // Store the Cloudinary URL instead of filename
+             
         });
 
         await newProduct.save();
