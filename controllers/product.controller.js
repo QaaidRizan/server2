@@ -1,44 +1,25 @@
 import mongoose from "mongoose";
 import Product from "../models/product.model.js";
-import { v2 as cloudinary } from 'cloudinary';
-import { Readable } from 'stream';
+import cloudinary from "./cloudinary.js";
 
-// Configure Cloudinary
-cloudinary.config({ 
-    cloud_name: 'dmlx9fibl', 
-    api_key: '923186729273634', 
-    api_secret: process.env.CLOUDINARY_API_SECRET // Store this in your environment variables
-});
-
-// Helper function to upload image buffer directly to Cloudinary
+// Helper function to upload image to Cloudinary
 const uploadToCloudinary = async (file) => {
-    try {
-        return new Promise((resolve, reject) => {
-            const uploadStream = cloudinary.uploader.upload_stream(
-                {
-                    folder: 'products',
-                    resource_type: 'image',
-                    // Add optimizations and transformations
-                    fetch_format: 'auto',
-                    quality: 'auto',
-                    transformation: [
-                        { width: 1000, crop: 'limit' }  // Limit maximum width while maintaining aspect ratio
-                    ]
-                },
-                (error, result) => {
-                    if (error) return reject(error);
-                    resolve(result.secure_url);
-                }
-            );
-            
-            // Convert buffer to stream and pipe to cloudinary
-            const stream = Readable.from(file.buffer);
-            stream.pipe(uploadStream);
-        });
-    } catch (error) {
-        console.error("Cloudinary upload failed:", error);
-        throw new Error("Image upload failed");
-    }
+  try {
+    const result = await cloudinary.uploader.upload(file.path, {
+      folder: 'products',
+      resource_type: 'image',
+      // Add optimizations and transformations
+      fetch_format: 'auto',
+      quality: 'auto',
+      transformation: [
+        { width: 1000, crop: 'limit' }  // Limit maximum width while maintaining aspect ratio
+      ]
+    });
+    return result.secure_url;
+  } catch (err) {
+    console.error("Cloudinary upload failed:", err);
+    throw new Error("Image upload failed: " + err.message);
+  }
 };
 
 const formatProduct = (product) => ({
