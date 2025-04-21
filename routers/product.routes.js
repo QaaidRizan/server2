@@ -1,55 +1,46 @@
-import express from 'express';
-import multer from 'multer';
-import * as productController from '../controllers/product.controller.js';
+import express from "express";
+import multer from "multer";
+import path from "path";
+import {
+    getAllProducts,
+    getProductById,
+    createProduct,
+    updateProduct,
+    deleteProduct
+} from "../controllers/product.controller.js";
 import fs from 'fs';
-import path from 'path';
+const uploadsDir = './uploads';
+if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir);
+}
+
 
 const router = express.Router();
 
-// Ensure uploads directory exists
-const uploadsDir = path.join(process.cwd(), 'uploads');
-if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
-// Configure multer for disk storage
+// Set up multer for image uploads
 const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'uploads/');
-  },
-  filename: function (req, file, cb) {
-    cb(null, Date.now() + '-' + file.originalname);
-  }
+    destination: (req, file, cb) => {
+        cb(null, './uploads'); // Directory for uploaded files
+    },
+    filename: (req, file, cb) => {
+        const timestamp = Date.now(); // Use only the timestamp for uniqueness
+        const cleanFileName = file.originalname.replace(/\s+/g, '_'); // Replace spaces with underscores for compatibility
+        cb(null, `${timestamp}-${cleanFileName}`);
+    },
 });
 
-const upload = multer({ 
-  storage: storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith('image/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only image files are allowed'), false);
-    }
-  }
-});
 
-// Routes with file upload middleware
-router.post('/', upload.single('image'), (req, res, next) => {
-  productController.createProduct(req, res, next);
-  // Clean up the temporary file
-  fs.unlinkSync(req.file.path);
-});
 
-router.put('/:id', upload.single('image'), (req, res, next) => {
-  productController.updateProduct(req, res, next);
-  // Clean up the temporary file
-  fs.unlinkSync(req.file.path);
-});
+const upload = multer({ storage });
 
-// Other routes
-router.get('/', productController.getAllProducts);
-router.get('/:id', productController.getProductById);
-router.delete('/:id', productController.deleteProduct);
+// Serve static files from the uploads folder
+router.use("/uploads", express.static("uploads"));
+
+// Define product-related routes
+router.get("/", getAllProducts); // Fetch all products
+router.get("/:id", getProductById); // Fetch a product by ID
+router.post("/", upload.single("image"), createProduct); // Create a new product
+router.put("/:id", upload.single("image"), updateProduct); // Update a product by ID
+router.delete("/:id", deleteProduct); // Delete a product by ID
 
 export default router;
