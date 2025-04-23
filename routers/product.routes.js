@@ -9,11 +9,11 @@ import {
     deleteProduct
 } from "../controllers/product.controller.js";
 import fs from 'fs';
+
 const uploadsDir = './uploads';
 if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir);
 }
-
 
 const router = express.Router();
 
@@ -29,8 +29,6 @@ const storage = multer.diskStorage({
     },
 });
 
-
-
 const upload = multer({ storage });
 
 // Serve static files from the uploads folder
@@ -39,8 +37,20 @@ router.use("/uploads", express.static("uploads"));
 // Define product-related routes
 router.get("/", getAllProducts); // Fetch all products
 router.get("/:id", getProductById); // Fetch a product by ID
-router.post("/", upload.single("image"), createProduct); // Create a new product
-router.put("/:id", upload.single("image"), updateProduct); // Update a product by ID
+router.post("/", upload.fields([
+    { name: "image1", maxCount: 1 },
+    { name: "image2", maxCount: 1 },
+    { name: "image3", maxCount: 1 },
+    { name: "image4", maxCount: 1 },
+    { name: "image5", maxCount: 1 },
+]), createProduct); // Create a new product with up to 5 images
+router.put("/:id", upload.fields([
+    { name: "image1", maxCount: 1 },
+    { name: "image2", maxCount: 1 },
+    { name: "image3", maxCount: 1 },
+    { name: "image4", maxCount: 1 },
+    { name: "image5", maxCount: 1 },
+]), updateProduct); // Update a product with up to 5 images
 router.delete("/:id", deleteProduct); // Delete a product by ID
 
 export default router;

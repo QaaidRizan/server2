@@ -6,8 +6,8 @@ import fs from "fs";
 // Configure Cloudinary
 cloudinary.config({ 
   cloud_name: 'dmlx9fibl', // Store this in your .env file for security
-  api_key: process.env.CLOUDINARY_API_KEY, // Store this in your .env file for security', 
-  api_secret: process.env.CLOUDINARY_API_SECRET // Store this in your .env file for security
+  api_key: process.env.CLOUDINARY_API_KEY, 
+  api_secret: process.env.CLOUDINARY_API_SECRET 
 });
 
 // Helper function to upload image to Cloudinary
@@ -41,7 +41,7 @@ const formatProduct = (product) => ({
   price: product.price,
   description: product.description,
   category: product.category,
-  image: product.image, // This will be the Cloudinary URL
+  images: [product.image1, product.image2, product.image3, product.image4, product.image5].filter(Boolean), // Filter out null/undefined
 });
 
 // Get all products
@@ -90,11 +90,6 @@ export const createProduct = async (req, res) => {
   if (!description) missingFields.push("description");
   if (!category) missingFields.push("category");
   
-  // Check if image was uploaded
-  if (!req.file) {
-    missingFields.push("image");
-  }
-  
   if (missingFields.length > 0) {
     return res.status(400).json({
       success: false,
@@ -103,55 +98,51 @@ export const createProduct = async (req, res) => {
   }
 
   try {
-    // Additional validation for the file
-    if (!req.file.path || !fs.existsSync(req.file.path)) {
-      return res.status(400).json({
-        success: false,
-        message: "Image upload failed: File not found on server",
-      });
-    }
+    const imageUrls = {};
 
-    // Check file size
-    const stats = fs.statSync(req.file.path);
-    if (stats.size === 0) {
-      fs.unlinkSync(req.file.path); // Remove empty file
-      return res.status(400).json({
-        success: false,
-        message: "Image upload failed: Empty file detected",
-      });
+    // Upload up to 5 images if provided
+    if (req.files) {
+      const imageFields = ['image1', 'image2', 'image3', 'image4', 'image5'];
+      for (let i = 0; i < imageFields.length; i++) {
+        const file = req.files[imageFields[i]];
+        if (file) {
+          imageUrls[imageFields[i]] = await uploadToCloudinary(file[0]);
+        }
+      }
     }
-
-    // Upload to Cloudinary and get the URL
-    const imageUrl = await uploadToCloudinary(req.file);
-    console.log("Cloudinary image URL:", imageUrl);
 
     const newProduct = new Product({
       name,
       price,
       description,
       category,
-      image: imageUrl, // Store the Cloudinary URL directly
+      ...imageUrls, // Spread uploaded image URLs into the product
     });
 
     const savedProduct = await newProduct.save();
     console.log("Product saved with ID:", savedProduct._id);
 
-    // Return the product with the Cloudinary URL
     res.status(201).json({
       success: true,
-      message: "Product created successfully with image",
+      message: "Product created successfully with images",
       product: formatProduct(savedProduct),
     });
   } catch (error) {
     console.error("Product creation error:", error);
     
-    // Clean up any uploaded file if there's an error
-    if (req.file && req.file.path && fs.existsSync(req.file.path)) {
-      try {
-        fs.unlinkSync(req.file.path);
-      } catch (unlinkError) {
-        console.error("Error deleting file:", unlinkError);
-      }
+    // Clean up any uploaded files if there's an error
+    if (req.files) {
+      Object.values(req.files).forEach(fileArray => {
+        fileArray.forEach(file => {
+          if (file.path && fs.existsSync(file.path)) {
+            try {
+              fs.unlinkSync(file.path);
+            } catch (unlinkError) {
+              console.error("Error deleting file:", unlinkError);
+            }
+          }
+        });
+      });
     }
     
     res.status(500).json({
@@ -167,26 +158,9 @@ export const updateProduct = async (req, res) => {
   const { id } = req.params;
   const { name, price, description, category } = req.body;
 
-  if (!name || !price || !description || !category) {
-    // If file was uploaded but other fields are missing, delete the file
-    if (req.file && req.file.path && fs.existsSync(req.file.path)) {
-      fs.unlinkSync(req.file.path);
-    }
-    
-    return res.status(400).json({ 
-      success: false, 
-      message: "All fields (name, price, description, category) are required"
-    });
-  }
-
   try {
     const productToUpdate = await Product.findById(id);
     if (!productToUpdate) {
-      // Delete uploaded file if product not found
-      if (req.file && req.file.path && fs.existsSync(req.file.path)) {
-        fs.unlinkSync(req.file.path);
-      }
-      
       return res.status(404).json({ 
         success: false, 
         message: "Product not found"
@@ -194,16 +168,20 @@ export const updateProduct = async (req, res) => {
     }
 
     // Update fields
-    productToUpdate.name = name;
-    productToUpdate.price = price;
-    productToUpdate.description = description;
-    productToUpdate.category = category;
+    productToUpdate.name = name || productToUpdate.name;
+    productToUpdate.price = price || productToUpdate.price;
+    productToUpdate.description = description || productToUpdate.description;
+    productToUpdate.category = category || productToUpdate.category;
 
-    // Update image only if a new file is provided
-    if (req.file) {
-      const imageUrl = await uploadToCloudinary(req.file);
-      console.log("Updated image URL:", imageUrl);
-      productToUpdate.image = imageUrl;
+    // Update images if new files are provided
+    if (req.files) {
+      const imageFields = ['image1', 'image2', 'image3', 'image4', 'image5'];
+      for (let i = 0; i < imageFields.length; i++) {
+        const file = req.files[imageFields[i]];
+        if (file) {
+          productToUpdate[imageFields[i]] = await uploadToCloudinary(file[0]);
+        }
+      }
     }
 
     const updatedProduct = await productToUpdate.save();
@@ -216,13 +194,19 @@ export const updateProduct = async (req, res) => {
   } catch (error) {
     console.error("Product update error:", error);
     
-    // Clean up any uploaded file if there's an error
-    if (req.file && req.file.path && fs.existsSync(req.file.path)) {
-      try {
-        fs.unlinkSync(req.file.path);
-      } catch (unlinkError) {
-        console.error("Error deleting file:", unlinkError);
-      }
+    // Clean up any uploaded files if there's an error
+    if (req.files) {
+      Object.values(req.files).forEach(fileArray => {
+        fileArray.forEach(file => {
+          if (file.path && fs.existsSync(file.path)) {
+            try {
+              fs.unlinkSync(file.path);
+            } catch (unlinkError) {
+              console.error("Error deleting file:", unlinkError);
+            }
+          }
+        });
+      });
     }
     
     res.status(500).json({ 

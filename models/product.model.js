@@ -24,9 +24,25 @@ const ProductSchema = new mongoose.Schema({
     required: true,
     min: 0,
   },
-  image: {
+  image1: {
     type: String,
-    required: true,
+    required: false, // Optional
+  },
+  image2: {
+    type: String,
+    required: false, // Optional
+  },
+  image3: {
+    type: String,
+    required: false, // Optional
+  },
+  image4: {
+    type: String,
+    required: false, // Optional
+  },
+  image5: {
+    type: String,
+    required: false, // Optional
   },
 });
 
