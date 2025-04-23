@@ -46,17 +46,24 @@ const formatProduct = (product) => ({
 
 // Get all products
 export const getAllProducts = async (req, res) => {
-    try {
-        const products = await Product.find().select("name price image description category");
-        if (!products || products.length === 0) {
-            return res.status(404).json({ success: false, message: "No products found" });
-        }
-
-        const formattedProducts = products.map(formatProduct);
-        res.status(200).json({ success: true, products: formattedProducts });
-    } catch (error) {
-        res.status(500).json({ success: false, message: "Server error", error: error.message });
+  try {
+    // Fetch all products and include all image fields
+    const products = await Product.find().select("name price description category image1 image2 image3 image4 image5");
+    if (!products || products.length === 0) {
+      return res.status(404).json({ success: false, message: "No products found" });
     }
+
+    // Format each product to include image links
+    const formattedProducts = products.map((product) => {
+      const formatted = formatProduct(product);
+      console.log(`Product ID: ${formatted.id}, Images:`, formatted.images); // Log image URLs
+      return formatted;
+    });
+
+    res.status(200).json({ success: true, products: formattedProducts });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Server error", error: error.message });
+  }
 };
 
 // Get a product by ID
@@ -68,11 +75,13 @@ export const getProductById = async (req, res) => {
             return res.status(400).json({ success: false, message: "Invalid product ID format" });
         }
 
-        const product = await Product.findById(id);
+        // Fetch the product by ID and include all image fields
+        const product = await Product.findById(id).select("name price description category image1 image2 image3 image4 image5");
         if (!product) {
             return res.status(404).json({ success: false, message: "Product not found" });
         }
 
+        // Format the product to include image links
         res.status(200).json({ success: true, product: formatProduct(product) });
     } catch (error) {
         res.status(500).json({ success: false, message: "Server error", error: error.message });
