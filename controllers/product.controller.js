@@ -247,3 +247,52 @@ export const deleteProduct = async (req, res) => {
         res.status(500).json({ success: false, message: "Server error", error: error.message });
     }
 };
+
+// Search products by name or description
+export const searchProducts = async (req, res) => {
+  try {
+    const { q } = req.query;
+    
+    if (!q) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Search query is required" 
+      });
+    }
+    
+    // Create a case-insensitive regex pattern for the search
+    const searchRegex = new RegExp(q, 'i');
+    
+    // Find products that match the search term in either name or description
+    const products = await Product.find({
+      $or: [
+        { name: searchRegex },
+        { description: searchRegex }
+      ]
+    }).select("name price description category image1 image2 image3 image4 image5");
+    
+    if (!products || products.length === 0) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "No products found matching your search" 
+      });
+    }
+    
+    // Format each product to include image links
+    const formattedProducts = products.map(product => formatProduct(product));
+    
+    res.status(200).json({ 
+      success: true, 
+      count: formattedProducts.length,
+      products: formattedProducts 
+    });
+    
+  } catch (error) {
+    console.error("Product search error:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Error searching products", 
+      error: error.message 
+    });
+  }
+};

@@ -6,7 +6,8 @@ import {
     getProductById,
     createProduct,
     updateProduct,
-    deleteProduct
+    deleteProduct,
+    searchProducts // Add this import
 } from "../controllers/product.controller.js";
 import fs from 'fs';
 
@@ -33,6 +34,9 @@ const upload = multer({ storage });
 
 // Serve static files from the uploads folder
 router.use("/uploads", express.static("uploads"));
+
+// Add this route before the other routes
+router.get("/search", searchProducts); // Search products by name or description
 
 // Define product-related routes
 router.get("/", getAllProducts); // Fetch all products
